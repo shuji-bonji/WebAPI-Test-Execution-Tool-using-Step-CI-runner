@@ -1,0 +1,14 @@
+{
+  "scripts": {
+    "test:api": "npx ts-node ./workflows.ts",
+    "test:api-v": "npx ts-node ./workflows.ts -v",
+    "test:api-t": "npx ts-node ./workflows.ts --trace"
+  },
+  "devDependencies": {
+    "@stepci/runner": "^2.0.7",
+    "@types/node": "^22.7.4",
+    "stepci": "^2.8.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.2"
+  }
+}
