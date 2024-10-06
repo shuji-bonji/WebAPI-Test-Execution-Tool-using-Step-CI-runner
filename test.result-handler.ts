@@ -100,18 +100,22 @@ export class GetLinkInEmail {
   }
 }
 
-// 登録確認用メールのLinkよりパラメーターを取得
+/** 登録確認用メールのLinkよりパラメーターを取得するクラス */
 export class GetLinkInUserRegistEmail extends GetLinkInEmail implements IWorkflowDataHandler {
   execute(workflowResult: WorkflowResult): WorkflowOptions | null {
     const regexPattern = `<a href="(http:\\/\\/${commonEnvVar.fontendHost}\\/register[^"]*)"`;
     const paramsKeys = ['id', 'code'];
     const prefix = 'registration_user_'
 
+    const env = this.getQueryParameterValueFromEmail(workflowResult, regexPattern, paramsKeys, prefix);
+    return {env};
+  }
+  /** メールより指定したパターンのhrefを取得し、そのURLより指定したクエリパラメータ値を取得する */
+  private getQueryParameterValueFromEmail(workflowResult: WorkflowResult,regexPattern: string, paramsKeys: string[], prefix?: string ) {
     const mail: Mail = this.getCapturesEmail(workflowResult);
     const decodedBody = this.getDecodedBody(mail);
     const url = this.gethref(decodedBody, regexPattern);
     const env = this.getLinkParamsData(url, paramsKeys, prefix);
-    
-    return {env};
+    return env;
   }
 }
