@@ -2,7 +2,7 @@ import { WorkflowOptions } from '@stepci/runner';
 import { TestExecutor } from './test.executor';
 import { CommandOptions, IResultReporter, ResultReporter, SampleCustomResultReporter } from './test.reporter';
 import { parseCommandLineOptions } from './test.utils';
-import { IWorkflowDataHandler } from './test.result-handler';
+import { GetLinkInUserRegistEmail, IWorkflowDataHandler } from './test.result-handler';
 
 /** 実行するテストワークフローの設定値型 */
 export type TestYaml = {
@@ -18,13 +18,14 @@ const options: CommandOptions = parseCommandLineOptions(process.argv.slice(2));
 export const testYamls: TestYaml[] = [
   // { fileName: 'auth.yml' },
   // {
-  //   fileName: 'mail.getRegistrationMail.yml',
+  //   fileName: 'mail.getSentMail.yml',
   //   wait: 15000,
   //   options: { env: { toUserAccount: 'user1@example.jp' } },
   //   workflowDataHandler: new GetLinkInUserRegistEmail()
   // },
   // { fileName: 'user.registration.yml' },
   // ここに新たなテストコードを追加してください。mail.getRegistrationMail
+
 ];
 
 const defaultResultReporter = new ResultReporter(options);

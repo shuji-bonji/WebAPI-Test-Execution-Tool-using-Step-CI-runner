@@ -1,7 +1,5 @@
-import { StepResult, TestResult, WorkflowOptions, WorkflowResult } from '@stepci/runner';
-import * as path from 'path';
+import { WorkflowOptions, WorkflowResult } from '@stepci/runner';
 import { commonEnvVar } from './test.env';
-import { readFile } from 'fs';
 
 export type PostParams = {
   [key: string]: any
@@ -52,7 +50,7 @@ type Params = {
 
 export class GetLinkInEmail {
   // 直近のテスト及びステップを取得し、キャプチャしたメールを取得
-  getCapturesEmail(workflowResult: WorkflowResult) {
+  protected getCapturesEmail(workflowResult: WorkflowResult) {
     const lastTest = workflowResult.result.tests.at(-1)
     if (!lastTest)
       throw new Error("No workflow result could be obtained.");
@@ -63,21 +61,19 @@ export class GetLinkInEmail {
     return mail;
   }
   // Mailの本文を取得しBase64をデコードし取得する
-  getDecodedBody(mail: Mail) {
-    const body = mail.Content.Body
-    const decodedBody = Buffer.from(body, 'base64').toString();
-    return decodedBody;    
+  protected getDecodedBody(mail: Mail) {
+    return Buffer.from(mail.Content.Body, 'base64').toString();
   }
   // herf属性の値を取得
-  gethref(decodedBody: string, regexPattern: string) {
+  protected getHref(decodedBody: string, regexPattern: string): URL {
     const regex = new RegExp(regexPattern, "i");
     const match = decodedBody.match(regex);
-    const href = match ? match[1] : 'URLが見つかりません';
-    const url = new URL(href);
-    return url;
+    if (!match || !match[1]) 
+      throw new Error("No matching URL found in the email body.");
+    return new URL(match[1]);
   }
-  // urlからクエリパラメータを取得
-  getLinkParamsData(url: URL, keys: string[], prefix?: string): Params {
+  /** urlから、クエリパラメータを取得 */
+  protected getLinkParamsDataWithKeys(url: URL, keys: string[], prefix?: string): Params {
     const fixedKeys = [...keys] as const;
     type Key = typeof fixedKeys[number]
     type Obj = { [P in Key]: string | null };
@@ -98,24 +94,54 @@ export class GetLinkInEmail {
     }
     return result;
   }
+  protected getLinkParamsData(url: URL, prefix?: string): Params {
+    const params = Object.fromEntries(url.searchParams);
+    if (!prefix) return params;
+    // prefixがある場合、新しいキーを設定
+    const modified = Object.keys(params).reduce((newObj, key) => {
+      newObj[`${prefix}${key}`] = params[key];
+      return newObj;
+    }, {} as Params);
+    return modified;
+  }
+  /** urlより、パスパラメータの値を取得 */
+  protected getLinkPathParamsData(url: URL, pathRegexPattern: string, paramName: string, prefix?: string): Params {
+    const regex = new RegExp(pathRegexPattern);
+    const match = url.pathname.match(regex);
+    if (!match) throw new Error("Path parameters did not match the pattern.");
+    const params: Params = {}
+    params[prefix ? `${prefix}${paramName}` : `${paramName}`] = match[0];
+    return params;
+  }
+  /** Mail本文より、マッチしたHref属性（URL）を取得する */
+  protected getLinkUrlFromMail(workflowResult: WorkflowResult,regexPattern: string )  {
+    const mail: Mail = this.getCapturesEmail(workflowResult);
+    const decodedBody = this.getDecodedBody(mail);
+    return this.getHref(decodedBody, regexPattern);
+  }
 }
 
 /** 登録確認用メールのLinkよりパラメーターを取得するクラス */
 export class GetLinkInUserRegistEmail extends GetLinkInEmail implements IWorkflowDataHandler {
   execute(workflowResult: WorkflowResult): WorkflowOptions | null {
-    const regexPattern = `<a href="(http:\\/\\/${commonEnvVar.fontendHost}\\/register[^"]*)"`;
-    const paramsKeys = ['id', 'code'];
+    const regexPattern = `<a href="(http:\\/\\/${commonEnvVar.frontendHost}\\/register[^"]*)"`;
     const prefix = 'registration_user_'
-
-    const env = this.getQueryParameterValueFromEmail(workflowResult, regexPattern, paramsKeys, prefix);
+    const url = this.getLinkUrlFromMail(workflowResult, regexPattern);
+    const env = this.getLinkParamsData(url, prefix);
     return {env};
   }
-  /** メールより指定したパターンのhrefを取得し、そのURLより指定したクエリパラメータ値を取得する */
-  private getQueryParameterValueFromEmail(workflowResult: WorkflowResult,regexPattern: string, paramsKeys: string[], prefix?: string ) {
-    const mail: Mail = this.getCapturesEmail(workflowResult);
-    const decodedBody = this.getDecodedBody(mail);
-    const url = this.gethref(decodedBody, regexPattern);
-    const env = this.getLinkParamsData(url, paramsKeys, prefix);
-    return env;
+}
+/** 承認依頼メールのLinkよりパラメーターを取得 */
+export class GetLinkInApproverRequestEmail extends GetLinkInEmail implements IWorkflowDataHandler {
+  execute(workflowResult: WorkflowResult): WorkflowOptions | null {
+    const regexPattern = `<a href="(http:\\/\\/${commonEnvVar.frontendHost}\\/documents\\/([0-9a-f-]+)\\/approve\\?token=([^"]+))"`;
+    const prefix = 'approve_user_'
+    const pathParamsName = 'id';
+    const pathRegexPattern = `([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})`;
+    const url = this.getLinkUrlFromMail(workflowResult, regexPattern);
+    const params = this.getLinkParamsData(url, prefix);
+    const pathParam = this.getLinkPathParamsData(url, pathRegexPattern, pathParamsName, prefix)
+    const env = { ...params, ...pathParam };
+    return { env };
   }
 }

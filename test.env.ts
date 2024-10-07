@@ -20,7 +20,7 @@ const EXPIRED_DAY = new Date(new Date()
 // 共通環境変数オブジェクト
 export const commonEnvVar = {
   host: HOST,
-  fontendHost: FRONTEND_HOST,
+  frontendHost: FRONTEND_HOST,
   baseurl: BASEURL,
   today: TODAY,
   now: NOW,
