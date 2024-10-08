@@ -32,8 +32,6 @@ export class ResultReporter implements IResultReporter {
   private printVerbose(workflowResult: WorkflowResult) {
     console.log(`!!!! ${workflowResult.workflow.name} : WorkFlow Result :!!!!`);
     console.log(workflowResult);
-    console.log(`==== ${workflowResult.workflow.name} : Tests Result : ====`);
-    console.log(workflowResult.result);
     console.log(`---- ${workflowResult.workflow.name} : Steps Result : ----`);
     workflowResult.result.tests.forEach(test => {
       console.log(test.steps)

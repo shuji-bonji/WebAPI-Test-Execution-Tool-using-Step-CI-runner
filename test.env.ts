@@ -4,7 +4,7 @@
 const HOST = "localhost:5000";
 const FRONTEND_HOST = "localhost:4200"
 const BASEURL = `http://${HOST}/api`;
-const BASE_DIR = 'WebAPITest';
+const BASE_DIR = '';
 const TEST_WORKFLOWS_DIR = 'tests';
 const TEST_RESOURCES_DIR = 'resources';
 

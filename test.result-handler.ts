@@ -1,5 +1,6 @@
 import { WorkflowOptions, WorkflowResult } from '@stepci/runner';
 import { commonEnvVar } from './test.env';
+import { lstat, readFile } from 'fs';
 
 export type PostParams = {
   [key: string]: any
@@ -135,7 +136,7 @@ export class GetLinkInUserRegistEmail extends GetLinkInEmail implements IWorkflo
 export class GetLinkInApproverRequestEmail extends GetLinkInEmail implements IWorkflowDataHandler {
   execute(workflowResult: WorkflowResult): WorkflowOptions | null {
     const regexPattern = `<a href="(http:\\/\\/${commonEnvVar.frontendHost}\\/documents\\/([0-9a-f-]+)\\/approve\\?token=([^"]+))"`;
-    const prefix = 'approve_user_'
+    const prefix = 'approve_document_'
     const pathParamsName = 'id';
     const pathRegexPattern = `([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})`;
     const url = this.getLinkUrlFromMail(workflowResult, regexPattern);

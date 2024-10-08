@@ -2,7 +2,7 @@ import { WorkflowOptions } from '@stepci/runner';
 import { TestExecutor } from './test.executor';
 import { CommandOptions, IResultReporter, ResultReporter, SampleCustomResultReporter } from './test.reporter';
 import { parseCommandLineOptions } from './test.utils';
-import { GetLinkInUserRegistEmail, IWorkflowDataHandler } from './test.result-handler';
+import { GetLinkInApproverRequestEmail, GetLinkInUserRegistEmail, IWorkflowDataHandler } from './test.result-handler';
 
 /** 実行するテストワークフローの設定値型 */
 export type TestYaml = {
