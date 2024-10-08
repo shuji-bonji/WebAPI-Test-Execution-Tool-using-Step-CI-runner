@@ -29,7 +29,7 @@ https://swagger.io/specification/
 npm install --save-dev stepci
 ```
 
-## stepci/runner の導入
+### stepci/runner の導入
 
 - https://github.com/stepci/runner
 
@@ -46,7 +46,7 @@ TypeScriptで実行結果を`Promise<WorkflowResult>`型で取得できるので
 ```sh
 npm install --save-dev @stepci/runner
 ```
-## ts-node の導入
+### ts-node の導入
 
 - https://github.com/TypeStrong/ts-node
 
