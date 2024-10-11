@@ -116,12 +116,12 @@ host: ${{env.host}}
 export const testYamls: TestYaml[] = [
   // { fileName: 'auth.yml' },
   // {
-  //   fileName: 'mail.getRegistrationMail.yml',
+  //   fileName: 'mail.getSentMail.yml',
   //   wait: 15000,
   //   options: { env: { toUserAccount: 'user1@example.jp' } },
-  //   workflowDataHandler: new GetLinkInUserRegistEmail()
+  //   workflowDataHandler: getLinkInUserRegistEmail
   // },
-  // { fileName: 'user.registration.yml' },
+  // { fileName: 'user.registration.yml',  reporter: customResultReporterSample },
   // ここに新たなテストコードを追加してください。mail.getRegistrationMail
   { fileName: 'auth.yml' },
 ];
@@ -130,13 +130,14 @@ export const testYamls: TestYaml[] = [
 
 TestYaml型の説明は以下通りです。
 
+
 |プロパティ|型|説明|
 |---|---|---|
 |fileName|string|テストワークフローファイル名|
 |wait?|number|ワークフロー実行するまでの待機時間|
 |options?|WorkflowOptions|実施するテストワークフロー固有の [`WorkflowOptions`](https://github.com/stepci/runner/blob/515d095ed2f737f64a9df9f7a8ca3272afbc24f2/src/index.ts#L72)オプションがあるならここで指定する。|
-|workflowDataHandler?|IWorkflowDataHandler|オプションとして、テストワークフロー後の処理を記述します。結果から取得した値を元にAPI以外の処理を行い、その結果を次のテストワークフロー引き渡したりするなどの処理をここで行う。|
-|reporter?|IResultReporter|オプションとして、カスタム表示を定義したクラスを指定|
+|workflowDataHandler?|Function|オプションとして、テストワークフロー後の処理を記述します。結果から取得した値を元にAPI以外の処理を行い、その結果を次のテストワークフロー引き渡したりするなどの処理をここで行う。|
+|reporter?|Function|オプションとして、カスタム表示を定義した関数を指定|
 
 ## HTTP API テストの実行
 
@@ -194,12 +195,13 @@ option false false
 
 `package.json`に登録した、npm スクリプトは以下となります。
 ```
-    "test:api": "npx ts-node ./WebAPITest/workflows.ts",
-    "test:api-v": "npx ts-node ./WebAPITest/workflows.ts -v",
-    "test:api-t": "npx ts-node ./WebAPITest/workflows.ts --trace"
+    "test:api": "npx ts-node ./workflows.ts",
+    "test:api-v": "npx ts-node ./workflows.ts -v",
+    "test:api-t": "npx ts-node ./workflows.ts --trace"
 ```
 
 ## Web API テストツールの構成
+
 
 |ファイル名|説明|
 |---|---|
@@ -208,14 +210,67 @@ option false false
 |test.env.ts|テスト実行時の環境変数を格納したファイル|
 |workflow.ts|テスト実行するコアファイル。`npx npm run` にて呼び出される。<br>テストワークフローYAMLファイルのリスト情報`testYamls`を保持。このファイルのリストに定義したテストコードを追加する。|
 |test.executor.ts|テスト実行クラス|
-|test.reporter.ts|テスト結果をリポート表示するクラスとI/F|
-|test.result-handler.ts|テスト実行後にテスト結果などを利用した、テスト以外の後処理など実行させるためのI/Fと、その実装クラスです。|
+|test.reporter.ts|テスト結果をリポート表示する関数群|
+|test.result-handler.ts|テスト実行後にテスト結果などを利用した、テスト以外の後処理など実行させるための関数群|
 |utils.ts|コマンドオプションの判定ユーティリティ|
 |tsconfig.json|typescript設定ファイル|
-## テストワークフロー・チェーンニング
-前のテストワークフロー結果から得た値を、次のテストワークフローに引き渡して実行する方法を想定して、`IWorkflowDataHandler`というインターフェイスを作りました。
 
-`IWorkflowDataHandler`を実装し、その実装クラスをワークフロー一覧に指定することで、単にワークフローチェインイングを目的とした、そのままチャプチャした値を`environmentData`として返却するシンプルな使い方もあれば、テストワークフローの結果から得た値で、ストレージや他のAPIにアクセスし、その結果を返し次のワークフローに引き渡すような処理の記述も可能です。
+
+## テスト結果を利用した処理の追加
+前のテストワークフロー結果から得た値を、次のテストワークフローに引き渡して実行する方法を想定して、`test.result-handler.ts`、テスト結果をハンドリングする関数を追加しました。
+
+このような関数をテストワークフロー一覧(`testYamls`)に指定することで、単にワークフローチェインイングを目的とした、そのままチャプチャした値を`env`として返却するシンプルな使い方もあれば、テストワークフローの結果から得た値で、ストレージや他のAPIにアクセスし、その結果を返し次のワークフローに引き渡すような処理の記述も可能になります。。
+
+
+#### 戻り値型:CapturesStorage
+```ts
+export declare type WorkflowOptions = {
+    path?: string;
+    secrets?: WorkflowOptionsSecrets;
+    ee?: EventEmitter;
+    env?: WorkflowEnv;
+    concurrency?: number;
+};
+```
+
+### 実装例
+- getLinkInUserRegistEmail: 登録確認用メールのLinkよりパラメーターを取得する
+- getLinkInApproverRequestEmail: 承認依頼メールのLinkよりパラメーターを取得する
+
+
+```ts
+/** 登録確認用メールのLinkよりパラメーターを取得する */
+export const getLinkInUserRegistEmail = (workflowResult: WorkflowResult): WorkflowOptions | null => {
+  const regexPattern = `<a href="(http:\\/\\/${commonEnvVar.frontendHost}\\/register[^"]*)"`;
+  const prefix = 'registration_user_'
+  const url = getLinkUrlFromMail(workflowResult, regexPattern);
+  const env = getLinkParamsData(url, prefix);
+  if (Object.keys(env).length === 0) return null;
+  return { env };
+}
+
+/** 承認依頼メールのLinkよりパラメーターを取得する */
+export const getLinkInApproverRequestEmail = (workflowResult: WorkflowResult): WorkflowOptions | null => {
+  const regexPattern = `<a href="(http:\\/\\/${commonEnvVar.frontendHost}\\/documents\\/([0-9a-f-]+)\\/approve\\?token=([^"]+))"`;
+  const prefix = 'approve_document_'
+  const pathParamsName = 'id';
+  const pathRegexPattern = `([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})`;
+  const url = getLinkUrlFromMail(workflowResult, regexPattern);
+  const params = getLinkParamsData(url, prefix);
+  const pathParam = getLinkPathParamsData(url, pathRegexPattern, pathParamsName, prefix)
+  const env = { ...params, ...pathParam };
+  if (Object.keys(env).length === 0) return null;
+  return { env };
+}
+```
+
+### テストシナリオ（テストワークフロー）リストへの追加
+```ts
+options = {hoge: 'hoge'};
+export const testYamls: TestYaml[] = [
+  { fileName: "auth.yml", workflowDataHandler: getLinkInUserRegistEmail },
+];
+```
 
 ## テスト結果より、テスト以外の別処理を行う
 以下のインターフェイスを実装し、テストシナリオ（テストワークフロー）リストの`testYamls`にて、`workflowDataHandler?`に、そのクラスを指定すれば、そのテスト結果を基に、テスト以外の処理を行なったり、`CapturesStorage`型で結果を返し、この結果を次のテストワークフローに引き渡して、チェーンニングを実現できます。
@@ -256,31 +311,19 @@ export const testYamls: TestYaml[] = [
 ];
 ```
 
-## テスト結果表示用のI/Fとクラス
+## テスト結果表示用の関数
 
-`IResultReporter`インターフェイスは、以下の`reportResult()`メソッドをI/Fとして持っています。
-`TestExecutor`クラスからテスト結果を表示するために実行します。
+デフォルトでは、`test.reporter.ts`に定義した、`resultReporter`関数が実行されます。
 
-### IResultReporter
-
-```ts
-export interface IResultReporter {
-  reportResult(workResult: WorkflowResult): void;
-}
-```
-
-> [!NOTE]
-> デフォルトでは、`IResultReporter`を実装した`ResultReporter`クラスが実行されます。
-
-このインターフェイスを実装し、テストシナリオ（テストワークフロー）リストの`testYamls`にて、`reporter?`に、そのクラスを指定すれば、別の形式で表示出力が可能です。
+`test.reporter.ts`に、同じようにリポーター関数を定義し、`testYaml`にて、そのワークフローで指定することによって、ワークフロー固有の表示形式に変更することができます。
 
 
 ### テストシナリオ（テストワークフロー）リストへの追加
-以下は、`SampleCustomResultReporter`として`IResultReporter`を実装し、`worklows.ts`の`testYamls`に追加した例です。
+以下は、`customResultReporterSample`関数を`test.reporter.ts`に実装し、`worklows.ts`の`testYamls`に追加した例です。
 ```ts
 options = {hoge: 'hoge'};
 export const testYamls: TestYaml[] = [
-  { fileName: "hoge.yml", reporter: new SampleCustomResultReporter(options)},
+  { fileName: "hoge.yml", reporter: customResultReporterSample },
 ];
 ```
 

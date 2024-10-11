@@ -18,7 +18,7 @@ const EXPIRED_DAY = new Date(new Date()
   .toISOString().split('T')[0].replace(/-/g, '/');
 
 // 共通環境変数オブジェクト
-export const commonEnvVar = {
+export const commonEnvVar: {[key: string]: string} = {
   host: HOST,
   frontendHost: FRONTEND_HOST,
   baseurl: BASEURL,

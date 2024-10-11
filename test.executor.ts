@@ -1,69 +1,52 @@
 import * as path from 'path';
-import { runFromFile, WorkflowOptions, WorkflowResult } from '@stepci/runner';
+import { runFromFile, WorkflowOptions } from '@stepci/runner';
 import { TestYaml } from './workflows';
-import { commonEnvVar } from './test.env';
-import { IResultReporter } from "./test.reporter";
-import EventEmitter from 'events';
+import { CommandOptions, resultReporter } from "./test.reporter";
+import { delay, mergeEventEmitters } from './test.utils';
 
-/** テストを実行するクラス */
+/** テスト実行クラス  */
 export class TestExecutor {
-  constructor(private defaultResultReporter: IResultReporter) {}
+  constructor(
+    private option: CommandOptions,
+    private commonEnvVar: { [key: string]: string },
+  ) { }
 
   async execute(testYamls: TestYaml[]) {
     let previousResult: WorkflowOptions | null = null;
 
     for (const testYaml of testYamls) {
-      await this.delay(testYaml.wait);
-      const filePath = path.resolve(__dirname, commonEnvVar.testWorkllowsDir, testYaml.fileName);
-      const options = this.prepareOptions(testYaml.options, commonEnvVar, previousResult);
+      await delay(testYaml.wait);
+      const filePath = path.resolve(__dirname, this.commonEnvVar.testWorkllowsDir, testYaml.fileName);
+      const testOptions = this.prepareOptions(testYaml.options, this.commonEnvVar, previousResult);
 
       try {
-        const workflowResult = await runFromFile(filePath, options);
-        previousResult = testYaml.workflowDataHandler?.execute(workflowResult) || null;
-        this.reportResults(testYaml.reporter || this.defaultResultReporter, workflowResult);
+        const workflowResult = await runFromFile(filePath, testOptions);
+
+        previousResult = testYaml.workflowDataHandler?.(workflowResult) || null;
+        // テストワークフロー固有の出力関数がある場合は指定関数を利用する。
+        testYaml.reporter
+          ? testYaml.reporter(this.option, workflowResult)
+          : resultReporter(this.option, workflowResult);
       } catch (error) {
         console.error(`Error executing test for ${filePath}:`, error);
       }
     }
   }
 
-  /** 指定した時間待機する */
-  private async delay(milliseconds: number | undefined) {
-    if (milliseconds) {
-      await new Promise(resolve => setTimeout(resolve, milliseconds));
+  /** テストワークフロー実行オプションの準備 */
+  private prepareOptions(options: WorkflowOptions | undefined,
+    commonEnvVar: { [key: string]: string; },
+    previousResult: WorkflowOptions | null): WorkflowOptions
+  {
+    const finalOptions = options ? { ...options } : { env: {} };
+    // 共通環境変数の追加
+    finalOptions.env = { ...finalOptions.env, ...commonEnvVar };
+    // 前回のワークフロー結果から引き継ぐオプションがあった場合
+    if (previousResult) {
+      finalOptions.secrets = { ...finalOptions.secrets, ...previousResult.secrets };
+      finalOptions.ee = mergeEventEmitters([finalOptions.ee, previousResult.ee]);
+      finalOptions.env = {...finalOptions.env, ...previousResult.env}
     }
-  }
-
-  /** 環境変数のマージとオプションのチェーンニング */
-  private prepareOptions(options: WorkflowOptions | undefined, commonEnv: object, previousResult: WorkflowOptions | null): WorkflowOptions {
-    const finalOptions = options || { env: {}};
-    finalOptions.env = {...finalOptions.env, ...commonEnv};
-    if (previousResult) 
-      this.mergeOptions(previousResult, finalOptions);
     return finalOptions;
-  }
-
-  /** 必要なオプションをマージする */
-  private mergeOptions(from: WorkflowOptions, to: WorkflowOptions) {
-    to.secrets = { ...to.secrets, ...from.secrets };
-    if (from.ee && to.ee)
-      this.mergeEventEmitters(from.ee, to.ee);
-    to.env = { ...to.env, ...from.env };
-  }
-
-  /** すべてのイベントをマージする */ 
-  private mergeEventEmitters(sourceEmitter: EventEmitter, targetEmitter: EventEmitter): void {
-    const eventNames = sourceEmitter.eventNames();
-    eventNames.forEach((eventName: string | symbol) => {
-      const listeners = sourceEmitter.listeners(eventName) as ((...args: any[]) => void)[];
-      listeners.forEach((listener: (...args: any[]) => void) => {
-        targetEmitter.on(eventName, listener);
-      });
-    });
-  }
-
-  /** 結果を表示 */
-  private reportResults(reporter: IResultReporter, workflowResult: WorkflowResult) {
-    reporter.reportResult(workflowResult);
   }
 }
