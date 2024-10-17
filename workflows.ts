@@ -19,13 +19,21 @@ const option: CommandOptions = parseCommandLineOptions(process.argv.slice(2));
 
 export const testYamls: TestYaml[] = [
   // { fileName: 'auth.yml' },
+  // { fileName: 'user.signup.yml' },
   // {
   //   fileName: 'mail.getSentMail.yml',
   //   wait: 15000,
-  //   options: { env: { toUserAccount: 'user1@example.jp' } },
+  //   options: {
+  //     env: {
+  //       getmail_kind: 'to',
+  //       getmail_query: 'user1@example.jp',
+  //       getmail_start: '0',
+  //       getmail_limit: '1'
+  //     }
+  //   },
   //   workflowDataHandler: getLinkInUserRegistEmail
   // },
-  // { fileName: 'user.registration.yml',  reporter: customResultReporterSample },
+  // { fileName: 'user.registration.yml' },
   // ここに新たなテストコードを追加してください。mail.getRegistrationMail
 ];
 
