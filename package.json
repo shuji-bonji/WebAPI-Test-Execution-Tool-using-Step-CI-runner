@@ -1,8 +1,8 @@
 {
   "scripts": {
-    "test:api": "npx ts-node ./workflows.ts",
-    "test:api-v": "npx ts-node ./workflows.ts -v",
-    "test:api-t": "npx ts-node ./workflows.ts --trace"
+    "test:api": "npx ts-node ./test.runner.ts",
+    "test:api-v": "npx ts-node ./test.runner.ts -v",
+    "test:api-t": "npx ts-node ./test.runner.ts --trace"
   },
   "devDependencies": {
     "@stepci/runner": "^2.0.7",

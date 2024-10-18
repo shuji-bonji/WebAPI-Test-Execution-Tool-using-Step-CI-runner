@@ -195,9 +195,9 @@ option false false
 
 `package.json`に登録した、npm スクリプトは以下となります。
 ```
-    "test:api": "npx ts-node ./workflows.ts",
-    "test:api-v": "npx ts-node ./workflows.ts -v",
-    "test:api-t": "npx ts-node ./workflows.ts --trace"
+    "test:api": "npx ts-node ./test.runner.ts",
+    "test:api-v": "npx ts-node ./test.runner.ts -v",
+    "test:api-t": "npx ts-node ./test.runner.ts --trace"
 ```
 
 ## Web API テストツールの構成
