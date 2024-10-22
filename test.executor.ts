@@ -13,6 +13,7 @@ export class TestExecutor {
 
   async execute(testYamls: TestYaml[]) {
     let previousResult: WorkflowOptions | null = null;
+    console.log(`||||||||| Web API Test Start: ${new Date().toLocaleString()} ||||||||||`)
 
     for (const testYaml of testYamls) {
       await delay(testYaml.wait);
@@ -31,6 +32,7 @@ export class TestExecutor {
         console.error(`Error executing test for ${filePath}:`, error);
       }
     }
+    console.log(`||||||||| Web API Test End: ${new Date().toLocaleString()} ||||||||||`)
   }
 
   /** テストワークフロー実行オプションの準備 */

@@ -19,7 +19,7 @@ const printTrace = (workflowResult: WorkflowResult): void =>
 // option none
 const printDefault = (workflowResult: WorkflowResult): void => {
   const resultStatus = getResultStatus(workflowResult);
-  console.log(`${workflowResult.workflow.name} Result:`, resultStatus);
+  console.log(`${workflowResult.path} Result:`, resultStatus);
   if (resultStatus === 'FAILED') {
     printFailedTestsDetails(workflowResult);
   }
@@ -36,9 +36,9 @@ const printFailedTestsDetails = (workflowResult: WorkflowResult): void => {
 }
 // 失敗したステップの詳細を印刷する関数
 const printFailedStepsDetails = (testResult: TestResult): void => {
-  testResult.steps.forEach(stepResult => {
+  testResult.steps.forEach((stepResult, index) => {
     if (!stepResult.passed) 
-      console.log(`- Test ID: ${stepResult.name}, Error Message: ${stepResult.errorMessage}`);
+      console.log(`- Step ${index + 1} - Test name: ${stepResult.name}, Error Message: ${stepResult.errorMessage}`);
   });
 }
 

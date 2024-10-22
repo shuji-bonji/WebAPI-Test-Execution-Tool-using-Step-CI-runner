@@ -1,4 +1,3 @@
-
 import { CommandOptions } from './test.reporter';
 import { parseCommandLineOptions } from './test.utils';
 import { TestExecutor } from './test.executor'

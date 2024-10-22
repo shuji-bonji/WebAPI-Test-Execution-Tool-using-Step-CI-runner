@@ -101,17 +101,3 @@ export const getLinkInUserRegistEmail = (workflowResult: WorkflowResult): Workfl
   if (Object.keys(env).length === 0) return null;
   return { env };
 }
-
-/** 承認依頼メールのLinkよりパラメーターを取得する */
-export const getLinkInApproverRequestEmail = (workflowResult: WorkflowResult): WorkflowOptions | null => {
-  const regexPattern = `<a href="(http:\\/\\/${commonEnvVar.frontendHost}\\/documents\\/([0-9a-f-]+)\\/approve\\?token=([^"]+))"`;
-  const prefix = 'approve_document_'
-  const pathParamsName = 'id';
-  const pathRegexPattern = `([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})`;
-  const url = getLinkUrlFromMail(workflowResult, regexPattern);
-  const params = getLinkParamsData(url, prefix);
-  const pathParam = getLinkPathParamsData(url, pathRegexPattern, pathParamsName, prefix)
-  const env = { ...params, ...pathParam };
-  if (Object.keys(env).length === 0) return null;
-  return { env };
-}
