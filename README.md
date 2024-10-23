@@ -157,39 +157,44 @@ npm run test:api-v
 ```sh
 npm run test:api-t > hoge.txt
 ```
-## 実行確認
-stepci/runner は　`Promise<WorkflowResult>`型で結果が返ってきるので、この中の`result`オブジェクトを出力してレポーティングしてます。
 
-以下の結果のように` passed: true,`にて、テストが成功していることを確認してください。
+## 実行確認
+テストに成功した場合は、各ワークフローごとに`PASSED`と表示します。
 
 今後、表示結果などの整形する必要はあるかと思いますが、こちらは別途対応となります。
 
 ```ts
-% npm run test:api  
+% npm run test:api
 
-> @0.0.1 test:api
-> npx ts-node ./WebAPITest/workflow.ts
+> @nasori-llc/sign-api@0.0.1 test:api
+> npx ts-node ./WebAPITest/test.runner.ts
 
-option false false
-{
-  workflow: {
-    name: 'Authentication Tests',
-    version: '1.0',
-    env: null,
-    tests: { user_authentication: [Object], token_lifecycle: [Object] }
-  },
-  result: {
-    tests: [ [Object], [Object] ],
-    timestamp: 2024-09-27T18:56:58.859Z,
-    passed: true,
-    duration: 197,
-    co2: 0.00154056006,
-    bytesSent: 0,
-    bytesReceived: 0
-  },
-  path: '/Users/{userdir}/tests/auth.yml'
-}
+||||||||| Web API Test Start: 2024/10/24 8:09:52 ||||||||||
+.../sign/sign-api/WebAPITest/tests/auth.yml Result: PASSED
+.../sign/sign-api/WebAPITest/tests/user.signup.yml Result: PASSED
+.../sign/sign-api/WebAPITest/tests/user.registration.yml Result: PASSED
+.
+.
+.
+||||||||| Web API Test End: 2024/10/24 8:13:32 ||||||||||
 ```
+エラーの場合は、以下のように`FAILED`と表示され、エラー内容が`Step`毎に表示されます。
+
+```sh
+.../sign/sign-api/WebAPITest/tests/account.delete.yml Result: FAILED
+- Step 3 - Test name: Get Delete Account Notice Email, Error Message: undefined
+```
+
+### 詳細の確認
+stepci/runner は　`Promise<WorkflowResult>`型で結果が返ってきるので、この中の`result`オブジェクトを出力してレポーティングしてます。
+
+エラーの際は以下のコマンドにて詳細を表示し、` passed: false,`などを検索し確認してください。
+
+```sh
+npm run test:api-t > hoge.log
+open hoge.log
+```
+
 
 ## npm スクリプト
 
