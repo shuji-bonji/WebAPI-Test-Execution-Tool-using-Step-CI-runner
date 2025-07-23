@@ -105,7 +105,7 @@ host: ${{env.host}}
 - https://docs.stepci.com/guides/testing-http.html
 
 
-> ![NOTE]
+> [！NOTE]
 > Step CIには、OpenAPIに似た`$ref`構文をして、ワークフローに`test`または`step` 単位でインポートが可能です。ただし柔軟に利用するには少し不便です。
 > https://docs.stepci.com/guides/organising-workflows.html
 
